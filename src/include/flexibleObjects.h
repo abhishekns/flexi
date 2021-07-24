@@ -1,8 +1,21 @@
+#pragma once
+
 #include <vector>
 #include <cstdarg>
 #include <map>
 #include <iostream>
 #include "logging.h"
+
+#if BUILDING_LIBFLEXI && HAVE_VISIBILITY
+#define LIBFLEXI_DLL_EXPORTED __attribute__((__visibility__("default")))
+#elif BUILDING_LIBFLEXI && defined _MSC_VER
+#define LIBFLEXI_DLL_EXPORTED __declspec(dllexport)
+#elif defined _MSC_VER
+#define LIBFLEXI_DLL_EXPORTED __declspec(dllimport)
+#else
+#define LIBFLEXI_DLL_EXPORTED
+#endif
+
 
 namespace flexiobjects {
 namespace properties {
@@ -10,7 +23,8 @@ namespace properties {
 using namespace logging;
 
 template<typename TPropertyType>
-struct iProperty {
+LIBFLEXI_DLL_EXPORTED struct iProperty {
+public:
     virtual ~iProperty() {}
     typedef TPropertyType PropertyType;
     typedef TPropertyType* PropertyTypePtr;
@@ -21,42 +35,34 @@ struct iProperty {
 
 };
 
-//template<typename> iProperty::~iProperty() {}
 
 template<typename TPropertyType>
-struct tPropertyImpl : public iProperty<TPropertyType> {
-
+LIBFLEXI_DLL_EXPORTED struct tPropertyImpl : public iProperty<TPropertyType> {
+public:
     typedef TPropertyType PropertyType;
     typedef TPropertyType* PropertyTypePtr;
 
-    tPropertyImpl() : propertyPtr(new PropertyType()) {
-        TRACE_FUNC_START
-        TRACE_FUNC_END
-    }
+    tPropertyImpl();
 
-    ~tPropertyImpl() {
-        TRACE_FUNC_START
-        delete propertyPtr;
-        TRACE_FUNC_END
-    }
+    ~tPropertyImpl();
 
-    virtual PropertyType* get() { return propertyPtr; }
-    virtual void set(PropertyType* value) { propertyPtr = value; }
+    virtual PropertyType* get();
+    virtual void set(PropertyType* value);
 
-    virtual PropertyType getValue() { return *propertyPtr; }
-    virtual void setValue(PropertyType value) { *propertyPtr = value; }
+    virtual PropertyType getValue();
+    virtual void setValue(PropertyType value);
 
-    protected:
-        typename iProperty<TPropertyType>::PropertyTypePtr propertyPtr;
+protected:
+    typename iProperty<TPropertyType>::PropertyTypePtr propertyPtr;
 };
 
 namespace traits {
     template<typename T>
-    struct bind {};
+    LIBFLEXI_DLL_EXPORTED struct bind {};
 
 #define DECLARE_BIND_TYPE(_type) \
     template<> \
-    struct bind<_type> { \
+    LIBFLEXI_DLL_EXPORTED struct bind<_type> { \
         typedef tPropertyImpl<_type> PropertyImpl; \
     }; \
 
@@ -76,12 +82,14 @@ DECLARE_BIND_TYPE(std::string)
 }
 
 template<typename ...TPropertyTypes>
-struct iPropertyContainer {
+LIBFLEXI_DLL_EXPORTED struct iPropertyContainer {
+public:
     static constexpr size_t NumberOfProperties = sizeof...(TPropertyTypes);
 };
 
 template<typename TCommonPropertyType, int TNumOfProperties, typename TPropertyImpl=typename traits::bind<TCommonPropertyType>::PropertyImpl>
-struct iSimilarPropertyContainer {
+LIBFLEXI_DLL_EXPORTED struct iSimilarPropertyContainer {
+public:
     static constexpr size_t NumberOfProperties = TNumOfProperties;
     typedef TPropertyImpl PropertyImpl;
     typedef typename TPropertyImpl::PropertyType PropertyType;
@@ -95,88 +103,54 @@ struct iSimilarPropertyContainer {
 };
 
 template<typename TCommonPropertyType, int TNumOfProperties, typename TPropertyImpl=typename traits::bind<TCommonPropertyType>::PropertyImpl>
-struct tSimilarPropertyContainerImpl : public iSimilarPropertyContainer<TCommonPropertyType, TNumOfProperties, TPropertyImpl> {
+LIBFLEXI_DLL_EXPORTED struct tSimilarPropertyContainerImpl : public iSimilarPropertyContainer<TCommonPropertyType, TNumOfProperties, TPropertyImpl> {
     typedef typename iSimilarPropertyContainer<TCommonPropertyType, TNumOfProperties, TPropertyImpl>::Property Property;
     static constexpr size_t numProperties = TNumOfProperties;
     typedef typename TPropertyImpl::PropertyType PropertyType;
 
-    tSimilarPropertyContainerImpl() {
-        TRACE_FUNC_START
-        TRACE_FUNC_END
-    }
+    tSimilarPropertyContainerImpl();
 
-    virtual void addProperty(Property* property) { this->properties.push_back(property); }
-    virtual Property* get(size_t index) { return properties[index]; }
-    virtual void set(size_t index, Property* property) { properties[index] = property; }
-    virtual PropertyType getValue(size_t index) { return properties[index]->getValue(); }
-    virtual void setValue(size_t index, PropertyType value) { properties[index]->setValue(value); }
+    virtual void addProperty(Property* property);
+    virtual Property* get(size_t index);
+    virtual void set(size_t index, Property* property);
+    virtual PropertyType getValue(size_t index);
+    virtual void setValue(size_t index, PropertyType value);
 
     protected:
         std::vector<Property*> properties;
 };
 
 template<typename TCommonPropertyType, int TNumOfProperties, typename TPropertyImpl=typename traits::bind<TCommonPropertyType>::PropertyImpl>
-struct NamedPropertyContainer : public tSimilarPropertyContainerImpl<TCommonPropertyType, TNumOfProperties, TPropertyImpl> {
-
+LIBFLEXI_DLL_EXPORTED struct NamedPropertyContainer : public tSimilarPropertyContainerImpl<TCommonPropertyType, TNumOfProperties, TPropertyImpl> {
+public:
     typedef tSimilarPropertyContainerImpl<TCommonPropertyType, TNumOfProperties, TPropertyImpl> Base;
     typedef typename tSimilarPropertyContainerImpl<TCommonPropertyType, TNumOfProperties, TPropertyImpl>::Property Property;
     typedef typename TPropertyImpl::PropertyType PropertyType;
 
     NamedPropertyContainer();
 
-    void addProperty(std::string& propertyName) {
-        TRACE_FUNC_START
-        propertyNames.push_back(propertyName);
-        auto empty = new TPropertyImpl();
-        Base::addProperty(empty);
-        TRACE_FUNC_END
-    }
+    void addProperty(std::string& propertyName);
 
-    Property* getProperty(std::string& propertyName) {
-        TRACE_FUNC_START
-        auto idx = getIndexOf(propertyName);
-        if (idx >= 0 && idx < this->properties.size()) {
-            return this->properties[idx];
-        }
-        // should we add new property or just throw exception?
-        // for now throwing excpetion.
-        throw new std::exception();
-        TRACE_FUNC_START
-    }
+    Property* getProperty(std::string& propertyName);
 
-    protected:
-        size_t getIndexOf(std::string& name) {
-            for(size_t index = 0; index < propertyNames.size(); index++) {
-                if(propertyNames[index] == name) {
-                    return index;
-                }
-            }
-            return -1;
-        }
-        std::vector<std::string> propertyNames;
+protected:
+    size_t getIndexOf(std::string& name);
+    std::vector<std::string> propertyNames;
 };
-
-template<typename TCommonPropertyType, int TNumOfProperties, typename TPropertyImpl>
-NamedPropertyContainer<TCommonPropertyType, TNumOfProperties, TPropertyImpl>::NamedPropertyContainer() {
-    TRACE_FUNC_START
-    TRACE_FUNC_END
-}
-
 
 template<typename TPropertyContainer>
 struct ValidatedPropertyContainer : public TPropertyContainer {
-    protected:
-        std::map<std::string, void*> validators;
+protected:
+    std::map<std::string, void*> validators;
 };
 
 template<typename TCommonPropertyType, int TNumOfProperties, typename PropertyImpl=typename traits::bind<TCommonPropertyType>::PropertyImpl>
-class NamedProperties: public NamedPropertyContainer<TCommonPropertyType, TNumOfProperties, PropertyImpl> {
+LIBFLEXI_DLL_EXPORTED class NamedProperties: public NamedPropertyContainer<TCommonPropertyType, TNumOfProperties, PropertyImpl> {
 public:
-    NamedProperties() {
-        TRACE_FUNC_START
-        TRACE_FUNC_END
-    }
+    NamedProperties();
 };
 
 }
 }
+
+#include <flexibleObjects.hpp>
