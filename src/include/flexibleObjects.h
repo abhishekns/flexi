@@ -6,26 +6,15 @@
 #include <iostream>
 #include "logging.h"
 
-#if BUILDING_LIBFLEXI && HAVE_VISIBILITY
-#define LIBFLEXI_DLL_EXPORTED __attribute__((__visibility__("default")))
-#elif BUILDING_LIBFLEXI && defined _MSC_VER
-#define LIBFLEXI_DLL_EXPORTED __declspec(dllexport)
-#elif defined _MSC_VER
-#define LIBFLEXI_DLL_EXPORTED __declspec(dllimport)
-#else
-#define LIBFLEXI_DLL_EXPORTED
-#endif
-
-
 namespace flexiobjects {
 namespace properties {
 
 using namespace logging;
 
 template<typename TPropertyType>
-LIBFLEXI_DLL_EXPORTED struct iProperty {
+struct  iProperty {
 public:
-    virtual ~iProperty() {}
+    virtual ~iProperty();
     typedef TPropertyType PropertyType;
     typedef TPropertyType* PropertyTypePtr;
     virtual PropertyType* get() = 0 ;
@@ -37,7 +26,7 @@ public:
 
 
 template<typename TPropertyType>
-LIBFLEXI_DLL_EXPORTED struct tPropertyImpl : public iProperty<TPropertyType> {
+struct  tPropertyImpl : public iProperty<TPropertyType> {
 public:
     typedef TPropertyType PropertyType;
     typedef TPropertyType* PropertyTypePtr;
@@ -58,11 +47,11 @@ protected:
 
 namespace traits {
     template<typename T>
-    LIBFLEXI_DLL_EXPORTED struct bind {};
+    struct  bind {};
 
 #define DECLARE_BIND_TYPE(_type) \
     template<> \
-    LIBFLEXI_DLL_EXPORTED struct bind<_type> { \
+    struct  bind<_type> { \
         typedef tPropertyImpl<_type> PropertyImpl; \
     }; \
 
@@ -82,13 +71,13 @@ DECLARE_BIND_TYPE(std::string)
 }
 
 template<typename ...TPropertyTypes>
-LIBFLEXI_DLL_EXPORTED struct iPropertyContainer {
+struct  iPropertyContainer {
 public:
     static constexpr size_t NumberOfProperties = sizeof...(TPropertyTypes);
 };
 
 template<typename TCommonPropertyType, int TNumOfProperties, typename TPropertyImpl=typename traits::bind<TCommonPropertyType>::PropertyImpl>
-LIBFLEXI_DLL_EXPORTED struct iSimilarPropertyContainer {
+struct  iSimilarPropertyContainer {
 public:
     static constexpr size_t NumberOfProperties = TNumOfProperties;
     typedef TPropertyImpl PropertyImpl;
@@ -103,7 +92,7 @@ public:
 };
 
 template<typename TCommonPropertyType, int TNumOfProperties, typename TPropertyImpl=typename traits::bind<TCommonPropertyType>::PropertyImpl>
-LIBFLEXI_DLL_EXPORTED struct tSimilarPropertyContainerImpl : public iSimilarPropertyContainer<TCommonPropertyType, TNumOfProperties, TPropertyImpl> {
+struct  tSimilarPropertyContainerImpl : public iSimilarPropertyContainer<TCommonPropertyType, TNumOfProperties, TPropertyImpl> {
     typedef typename iSimilarPropertyContainer<TCommonPropertyType, TNumOfProperties, TPropertyImpl>::Property Property;
     static constexpr size_t numProperties = TNumOfProperties;
     typedef typename TPropertyImpl::PropertyType PropertyType;
@@ -121,7 +110,7 @@ LIBFLEXI_DLL_EXPORTED struct tSimilarPropertyContainerImpl : public iSimilarProp
 };
 
 template<typename TCommonPropertyType, int TNumOfProperties, typename TPropertyImpl=typename traits::bind<TCommonPropertyType>::PropertyImpl>
-LIBFLEXI_DLL_EXPORTED struct NamedPropertyContainer : public tSimilarPropertyContainerImpl<TCommonPropertyType, TNumOfProperties, TPropertyImpl> {
+struct NamedPropertyContainer : public tSimilarPropertyContainerImpl<TCommonPropertyType, TNumOfProperties, TPropertyImpl> {
 public:
     typedef tSimilarPropertyContainerImpl<TCommonPropertyType, TNumOfProperties, TPropertyImpl> Base;
     typedef typename tSimilarPropertyContainerImpl<TCommonPropertyType, TNumOfProperties, TPropertyImpl>::Property Property;
@@ -139,13 +128,13 @@ protected:
 };
 
 template<typename TPropertyContainer>
-struct ValidatedPropertyContainer : public TPropertyContainer {
+struct  ValidatedPropertyContainer : public TPropertyContainer {
 protected:
     std::map<std::string, void*> validators;
 };
 
 template<typename TCommonPropertyType, int TNumOfProperties, typename PropertyImpl=typename traits::bind<TCommonPropertyType>::PropertyImpl>
-LIBFLEXI_DLL_EXPORTED class NamedProperties: public NamedPropertyContainer<TCommonPropertyType, TNumOfProperties, PropertyImpl> {
+class  NamedProperties: public NamedPropertyContainer<TCommonPropertyType, TNumOfProperties, PropertyImpl> {
 public:
     NamedProperties();
 };

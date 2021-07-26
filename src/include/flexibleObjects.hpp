@@ -8,6 +8,9 @@ namespace properties {
 using namespace logging;
 
 template<typename TPropertyType>
+iProperty<TPropertyType>::~iProperty() {}
+
+template<typename TPropertyType>
 tPropertyImpl<TPropertyType>::tPropertyImpl() : propertyPtr(new PropertyType()) {
     traceStart();
     traceEnd();

@@ -1,22 +1,26 @@
 #include <iostream>
 #include <string>
 
+/*
+#ifndef LIBFLEXI_DLL_EXPORTED
 #if BUILDING_LIBFLEXI && HAVE_VISIBILITY
-#define LIBFLEXI_DLL_EXPORTED __attribute__((__visibility__("default")))
+#define LIBFLEXI_DLL_EXPORTED //__attribute__((__visibility__("default")))
 #elif BUILDING_LIBFLEXI && defined _MSC_VER
 #define LIBFLEXI_DLL_EXPORTED __declspec(dllexport)
-#elif defined _MSC_VER
+#elif defined _MSC_VER && !defined(LIBFLEXI_DLL_EXPORTED)
 #define LIBFLEXI_DLL_EXPORTED __declspec(dllimport)
 #else
 #define LIBFLEXI_DLL_EXPORTED
 #endif
-
+#endif
+*/
+#define LIBFLEXI_DLL_EXPORTED
 
 #ifndef __FUNCTION_NAME__
     #ifdef WIN32   //WINDOWS
         #define __FUNCTION_NAME__   __FUNCTION__
-        #define __LINE_NO__
-        #define __FILE_NAME__
+        #define __LINE_NO__ ""
+        #define __FILE_NAME__ ""
     #else          //*NIX
         #define __FUNCTION_NAME__   __func__
         #define __LINE_NO__ __LINE__
@@ -24,13 +28,26 @@
     #endif
 #endif
 
+// we know that on linux gcc provides this
+#ifndef __TIMESTAMP__
+    #ifdef WIN32   //WINDOWS
+        #define __TIMESTAMP__ ""
+        #error "test"
+    #endif
+#endif
+
 
 namespace flexiobjects {
 namespace logging {
 
-LIBFLEXI_DLL_EXPORTED class Logger {
+#ifdef _MSC_VER
+static int loggingEnabled = 0;
+#endif 
+class LIBFLEXI_DLL_EXPORTED Logger {
+#ifndef _MSC_VER // all non-msvc code
 private:
     static int loggingEnabled;
+#endif // !_MSC_VER
 public:
     static void enableLogging();
     static void disableLogging();

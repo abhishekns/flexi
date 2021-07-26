@@ -3,7 +3,9 @@
 namespace flexiobjects {
 namespace logging {
 
+#ifndef _MSC_VER
 int Logger::loggingEnabled = 0;
+#endif
 
 void Logger::enableLogging() {
     loggingEnabled = 1;
